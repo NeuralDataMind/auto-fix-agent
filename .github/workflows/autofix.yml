@@ -11,7 +11,7 @@ permissions:
 jobs:
   auto-heal:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -27,6 +27,7 @@ jobs:
 
       - name: Build RAG Memory (Index Codebase)
         run: |
+          # We run the indexer but we WON'T commit the DB it creates
           python indexer.py
 
       - name: Run AI Agent
@@ -39,7 +40,16 @@ jobs:
         run: |
           git config --global user.name 'AutoFix AI'
           git config --global user.email 'ai-bot@neuraldatamind.com'
-          
+
+          # 🧹 CLEANUP: Force remove generated files so they are NEVER committed
+          # This prevents the "pollution" we saw in your logs
+          rm -rf chroma_db __pycache__ .pytest_cache
+
+          # 🔄 SYNC: Pull the latest changes to fix the "Updates were rejected" error
+          # --rebase keeps the history clean
+          git pull origin main --rebase || echo "Pull failed or no changes, continuing..."
+
+          # Check if there are still file changes (which would be the Code Fixes)
           if [ -n "$(git status --porcelain)" ]; then
             echo "🐛 Bug detected and fixed by AI. Pushing changes..."
             git add .
