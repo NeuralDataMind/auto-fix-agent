@@ -82,15 +82,3 @@ python agent.py
 ---
 
 *Built by Mallikarjun using GenAI and Grit.*
-
-```
-
-### **Why this README wins:**
-1.  **Architecture Section:** It explains *how* it works (recruiters love "ReAct" and "RAG" keywords).
-2.  **Badges:** It looks like a maintained open-source tool.
-3.  **Focus on "Proactive":** It highlights that this tool works *automatically*, which is the definition of "Indispensable" (your original requirement).
-
-**Update the file, commit, and push. You are now fully ready to showcase this.**
-Would you like to move on to the next project (Graph Fraud Detection)?
-
-```
