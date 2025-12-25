@@ -2,7 +2,7 @@ name: Auto-Fix Agent CI/CD
 
 on:
   push:
-    branches: ['main']
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
 jobs:
   auto-heal:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -25,6 +25,10 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Build RAG Memory (Index Codebase)
+        run: |
+          python indexer.py
+
       - name: Run AI Agent
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -33,12 +37,10 @@ jobs:
 
       - name: Check for Changes & Push Fix
         run: |
-          # Configure Git Identity for the Bot
           git config --global user.name 'AutoFix AI'
           git config --global user.email 'ai-bot@neuraldatamind.com'
-
-          # Check if the agent modified any files (Note the spaces inside [ ])
-          if [ -n "$(git status --porcelain)" ]; then 
+          
+          if [ -n "$(git status --porcelain)" ]; then
             echo "🐛 Bug detected and fixed by AI. Pushing changes..."
             git add .
             git commit -m "🤖 AI Auto-Fix: Resolved Unit Test Failures"
