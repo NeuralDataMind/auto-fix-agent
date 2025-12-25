@@ -1,4 +1,3 @@
-```markdown
 # 🛡️ Auto-Fix Agent: RAG-Powered Self-Healing CI/CD
 
 ![Status](https://img.shields.io/badge/Status-Active-success)
