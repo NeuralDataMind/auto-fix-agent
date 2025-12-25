@@ -2,7 +2,11 @@ import subprocess
 import os
 from groq import Groq
 
-API_KEY = os.getenv("GROQ_API_KEY")
+API_KEY = os.getenv("GROQ_API_KEY", "").strip() 
+
+if not API_KEY:
+    raise ValueError("API Key is missing or empty!")
+
 client = Groq(api_key = API_KEY)
 
 def run_tests():
