@@ -35,4 +35,4 @@ The system follows a **ReAct (Reasoning + Acting)** workflow:
 ## 📸 Proof of Concept
 *The agent automatically fixing a `TypeError` by implementing type-casting and error handling:*
 ![Fix Demo](https://github.com/NeuralDataMind/auto-fix-agent/blob/main/broken_code.py)
-*(Note: Link to your own screenshot here)*
+**
