@@ -2,7 +2,7 @@ import subprocess
 import os
 from groq import Groq
 
-API_KEY = ""
+API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key = API_KEY)
 
 def run_tests():
