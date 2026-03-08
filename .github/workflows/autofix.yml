@@ -2,64 +2,73 @@ name: Auto-Fix Agent CI/CD
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
-
-permissions:
-  contents: write
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  auto-heal:
+  autofix:
     runs-on: ubuntu-latest
+    
+    # Permissions are required for the bot to push fixes back to the repo
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: '3.10'
 
+      # STEP 1: Cache Pip dependencies
+      - name: Cache Pip Packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # STEP 2: Cache HuggingFace models (The Sentence Transformer)
       - name: Cache HuggingFace Models
         uses: actions/cache@v3
         with:
-          path: ~/.cache/huggingface
-          key: ${{ runner.os }}-huggingface-all-MiniLM-L6-v2
+          path: ~/.cache/torch/sentence_transformers
+          key: ${{ runner.os }}-hf-models
+          restore-keys: |
+            ${{ runner.os }}-hf-models
 
       - name: Install Dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build RAG Memory (Index Codebase)
-        run: |
-          # We run the indexer but we WON'T commit the DB it creates
-          python indexer.py
+      - name: Run RAG Indexer
+        run: python indexer.py
 
       - name: Run AI Agent
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python agent.py
+
+      # STEP 3: Check for changes and push back to main
+      - name: Commit and Push Fixes
         run: |
-          python agent.py
-
-      - name: Check for Changes & Push Fix
-        run: |
-          git config --global user.name 'AutoFix AI'
-          git config --global user.email 'ai-bot@neuraldatamind.com'
-
-          # 🧹 CLEANUP: Force remove generated files so they are NEVER committed
-          rm -rf chroma_db __pycache__ .pytest_cache
-
-          # 🔄 SYNC: Pull the latest changes
-          git pull origin main --rebase || echo "Pull failed or no changes, continuing..."
-
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Check if there are any changes to commit
           if [ -n "$(git status --porcelain)" ]; then
-            echo "🐛 Bug detected and fixed by AI. Pushing changes..."
+            echo "Changes detected, pushing to main..."
             git add .
-            # CRITICAL: [skip ci] prevents the agent from triggering its own workflow
-            git commit -m "🤖 AI Auto-Fix: Resolved Unit Test Failures [skip ci]"
+            git commit -m "bot: auto-fix applied [skip ci]"
+            git pull origin main --rebase
             git push
           else
-            echo "✅ No fixes needed. Code is clean."
+            echo "No changes to commit."
           fi
