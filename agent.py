@@ -23,11 +23,50 @@ def run_tests():
     )
     return result.returncode, result.stdout, result.stderr
 
+def get_ai_fix(error_log, code_content):
+    print(" analyzing error with AI...")
+    
+    truncated_log = error_log[-2000:] if len(error_log) > 2000 else error_log
+
+    prompt = f"""
+    You are an expert Python debugger. 
+    Analyze the following failed unit test and provide the fully corrected Python file.
+    
+    FILE CONTENT:
+    {code_content}
+    
+    ERROR LOG:
+    {truncated_log}
+    
+    OUTPUT FORMAT INSTRUCTIONS:
+    Output ONLY the raw, executable Python code. 
+    Start immediately with the first line of code. 
+    End immediately after the last line of code.
+    No explanations. No markdown formatting. No backticks. Just code.
+    """
+    
+    chat_completion = client.chat.completions.create(
+        messages=[{"role": "user", "content": prompt}],
+        model="llama-3.3-70b-versatile",
+        max_tokens=8000, 
+        temperature=0 
+    )
+    
+    return chat_completion.choices[0].message.content
+
+def extract_core_error(error_log):
+    """Extracts the bottom of the stack trace where the actual error and filename reside."""
+    # Grab the last 1000 characters to ensure we capture the failure reason
+    return error_log[-1000:] if len(error_log) > 1000 else error_log
+
 def find_culprit_file(error_log):
     print(" Searching RAG memory for relevant files...")
     
+    # 🚨 CRITICAL FIX: Truncate the log BEFORE sending to the embedding model
+    core_error = extract_core_error(error_log)
+    
     results = collection.query(
-        query_texts=[error_log],
+        query_texts=[core_error],
         n_results=1
     )
     
@@ -38,39 +77,6 @@ def find_culprit_file(error_log):
     
     return None
 
-def get_ai_fix(error_log, code_content):
-    print(" analyzing error with AI...")
-    
-    truncated_log = error_log[-2000:] if len(error_log) > 2000 else error_log
-
-    prompt = f"""
-    You are an expert Python debugger. 
-    Here is a Python file that failed its unit tests.
-    
-    FILE CONTENT:
-    {code_content}
-    
-    ERROR LOG:
-    {truncated_log}
-    
-    TASK:
-    Rewrite the ENTIRE file to fix the error.
-    
-    IMPORTANT GUIDELINES:
-    1. Return ONLY the raw python code. 
-    2. Do NOT use Markdown formatting (no ```python blocks).
-    3. Do NOT provide explanations.
-    """
-    
-    chat_completion = client.chat.completions.create(
-        messages=[{"role": "user", "content": prompt}],
-        model="llama-3.3-70b-versatile",
-        max_tokens=1024, 
-        temperature=0 
-    )
-    
-    return chat_completion.choices[0].message.content
-
 def main():
     return_code, stdout, stderr = run_tests()
     
@@ -80,30 +86,29 @@ def main():
 
     print(" Tests Failed!")
     
-    # 2. RAG Retrieval (The New Part)
-    # Instead of hardcoding 'broken_code.py', we find it dynamically
-    culprit_file = find_culprit_file(stdout + stderr)
+    # Combine outputs
+    full_log = stdout + stderr
+    
+    # Pass to RAG
+    culprit_file = find_culprit_file(full_log)
     
     if not culprit_file:
         print(" Could not find relevant file in memory.")
         return
 
-    # 3. Read the file
-    with open(culprit_file, 'r') as f:
+    with open(culprit_file, 'r', encoding='utf-8') as f:
         original_code = f.read()
     
-    # 4. Get the Fix
-    fixed_code = get_ai_fix(stdout, original_code)
+    # Get fix from LLM
+    fixed_code = get_ai_fix(full_log, original_code)
     
     # Clean up formatting
     fixed_code = fixed_code.replace("```python", "").replace("```", "").strip()
 
-    # 5. Apply the Fix
     print(f" applying fix to {culprit_file}...")
-    with open(culprit_file, 'w') as f:
+    with open(culprit_file, 'w', encoding='utf-8') as f:
         f.write(fixed_code)
     
-    # 6. Verify
     print(" verifying fix...")
     return_code, stdout, stderr = run_tests()
     
