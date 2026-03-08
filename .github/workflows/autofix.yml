@@ -20,6 +20,13 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
+          cache: 'pip'
+
+      - name: Cache HuggingFace Models
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/huggingface
+          key: ${{ runner.os }}-huggingface-all-MiniLM-L6-v2
 
       - name: Install Dependencies
         run: |
@@ -42,18 +49,16 @@ jobs:
           git config --global user.email 'ai-bot@neuraldatamind.com'
 
           # 🧹 CLEANUP: Force remove generated files so they are NEVER committed
-          # This prevents the "pollution" we saw in your logs
           rm -rf chroma_db __pycache__ .pytest_cache
 
-          # 🔄 SYNC: Pull the latest changes to fix the "Updates were rejected" error
-          # --rebase keeps the history clean
+          # 🔄 SYNC: Pull the latest changes
           git pull origin main --rebase || echo "Pull failed or no changes, continuing..."
 
-          # Check if there are still file changes (which would be the Code Fixes)
           if [ -n "$(git status --porcelain)" ]; then
             echo "🐛 Bug detected and fixed by AI. Pushing changes..."
             git add .
-            git commit -m "🤖 AI Auto-Fix: Resolved Unit Test Failures"
+            # CRITICAL: [skip ci] prevents the agent from triggering its own workflow
+            git commit -m "🤖 AI Auto-Fix: Resolved Unit Test Failures [skip ci]"
             git push
           else
             echo "✅ No fixes needed. Code is clean."
