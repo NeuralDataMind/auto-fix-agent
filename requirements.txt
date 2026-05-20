@@ -3,3 +3,6 @@ groq
 python-dotenv
 chromadb
 sentence-transformers
+langgraph
+langchain
+langchain-community
