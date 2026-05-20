@@ -77,11 +77,9 @@ def extract_core_error(error_log: str) -> str:
 
 
 def retrieve_relevant_chunks(error_log: str):
-    """
-    Retrieves top-k relevant code chunks from ChromaDB.
+   # Retrieves top-k relevant code chunks from ChromaDB.
 
-    The vector index is built by indexer.py using AST-based chunks.
-    """
+   
     print("Searching RAG memory for relevant code chunks...")
 
     core_error = extract_core_error(error_log)
@@ -109,12 +107,8 @@ def retrieve_relevant_chunks(error_log: str):
 
 
 def choose_culprit_file(retrieved_docs) -> str | None:
-    """
-    Selects the file from the highest-ranked retrieved chunk.
+   # Selects the file from the highest-ranked retrieved chunk.
 
-    Current prototype patches one file.
-    Production version should support multi-file repair or human review.
-    """
     if not retrieved_docs:
         return None
 
@@ -127,9 +121,8 @@ def choose_culprit_file(retrieved_docs) -> str | None:
 
 
 def build_retrieved_context(retrieved_docs) -> str:
-    """
-    Converts retrieved LangChain Documents into compact prompt context.
-    """
+    # Converts retrieved LangChain Documents into compact prompt context.
+
     context_blocks = []
 
     for index, doc in enumerate(retrieved_docs, start=1):
@@ -155,9 +148,8 @@ LINES: {start_line}-{end_line}
 
 
 def get_ai_fix(error_log: str, full_file_content: str, retrieved_context: str) -> str:
-    """
-    Uses Groq through LangChain to generate the corrected Python file.
-    """
+#   Uses Groq through LangChain to generate the corrected Python file.
+
     print("Analyzing error with AI...")
 
     truncated_log = extract_core_error(error_log)
@@ -221,9 +213,7 @@ ERROR LOG:
 
 
 def clean_llm_code_output(raw_output: str) -> str:
-    """
-    Removes accidental markdown fences if the model ignores instructions.
-    """
+    # Removes accidental markdown fences if the model ignores instructions.
     cleaned = raw_output.strip()
 
     if cleaned.startswith("```python"):
