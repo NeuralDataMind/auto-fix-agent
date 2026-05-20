@@ -23,8 +23,7 @@ IGNORE_DIRS = {
 IGNORE_FILES = {
     "agent.py",
     "indexer.py",
-    "agent_v2_langgraph_prototype.py",
-}
+}    #agent_v2_langgraph_prototype.py need to be add
 
 
 PERSIST_DIRECTORY = "./chroma_db"
