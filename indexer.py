@@ -32,12 +32,8 @@ EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
 
 def should_index_file(file_name: str) -> bool:
-    """
-    Decide whether a Python file should be indexed.
-
-    We index application source files and skip tests, agent files,
-    indexer files, and non-Python files.
-    """
+    # indexing python files
+    # skipping ingore_files and dir
     if not file_name.endswith(".py"):
         return False
 
@@ -51,14 +47,8 @@ def should_index_file(file_name: str) -> bool:
 
 
 def extract_ast_chunks(file_path: str, content: str) -> list[Document]:
-    """
-    Split Python source code into AST-aware chunks.
+    # Split Python source code into AST-aware chunks.
 
-    Instead of storing one embedding for the whole file, this extracts
-    top-level functions, async functions, and classes as separate documents.
-
-    If the file cannot be parsed, it falls back to whole-file indexing.
-    """
     try:
         tree = ast.parse(content)
     except SyntaxError:
@@ -116,9 +106,9 @@ def extract_ast_chunks(file_path: str, content: str) -> list[Document]:
 
 
 def load_code_documents(root_dir: str = ".") -> list[Document]:
-    """
-    Walk the repository and convert Python files into LangChain Documents.
-    """
+    
+    # Walk the repository and convert Python files into LangChain Documents.
+    
     all_documents: list[Document] = []
 
     files_processed = 0
@@ -160,9 +150,7 @@ def load_code_documents(root_dir: str = ".") -> list[Document]:
 
 
 def build_vector_store(documents: list[Document]) -> None:
-    """
-    Build and persist the Chroma vector database using LangChain.
-    """
+    # Build and persist the Chroma vector database using LangChain.        
     if not documents:
         print("No valid Python source documents found to index.")
         return
