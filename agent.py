@@ -62,7 +62,7 @@ def extract_core_error(error_log):
 def find_culprit_file(error_log):
     print(" Searching RAG memory for relevant files...")
     
-    # 🚨 CRITICAL FIX: Truncate the log BEFORE sending to the embedding model
+    # CRITICAL FIX: Truncate the log BEFORE sending to the embedding model
     core_error = extract_core_error(error_log)
     
     results = collection.query(
