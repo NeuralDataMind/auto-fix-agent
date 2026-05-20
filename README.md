@@ -1,84 +1,41 @@
-# 🛡️ Auto-Fix Agent: RAG-Powered Self-Healing CI/CD
+# Auto-Fix Agent
 
-![Status](https://img.shields.io/badge/Status-Active-success)
-![Python](https://img.shields.io/badge/Python-3.12-blue)
-![AI](https://img.shields.io/badge/Model-Llama3-orange)
-![RAG](https://img.shields.io/badge/RAG-ChromaDB-green)
+Auto-Fix Agent is an AI-assisted code repair pipeline that runs inside GitHub Actions.
 
-## 🚀 Overview
-**Auto-Fix Agent** is an autonomous AI Engineer that lives inside your GitHub Actions pipeline. Unlike standard coding assistants that wait for prompts, this agent **proactively intercepts build failures**, analyzes the root cause, and pushes fixes automatically.
+It runs the test suite, captures failures, retrieves the most relevant source file using ChromaDB, sends the file and error log to an LLM, applies the generated fix, and verifies the result by running tests again.
 
-It uses **Retrieval Augmented Generation (RAG)** to scan the repository, identify the specific file causing the error (even if not explicitly named in the logs), and applies semantic patches using **Llama 3**.
+This project is closer to a deterministic RAG repair pipeline than a fully autonomous agent. It follows a fixed flow: test, retrieve, patch, verify.
 
-## 🧠 How It Works (The Architecture)
+## What It Does
 
-The system operates on a "Loop of Reasoning" whenever a developer pushes code:
+1. Runs `pytest`.
+2. If tests fail, captures the error output.
+3. Uses ChromaDB to search the indexed codebase.
+4. Retrieves the file most related to the failure.
+5. Sends the file content and error log to a Groq-hosted Llama model.
+6. Writes the generated fix back to the file.
+7. Runs tests again.
+8. If tests pass, GitHub Actions can commit the fix.
 
-1.  **🚨 Interception:** The GitHub Action detects a failed `pytest` run and captures the `stderr` trace.
-2.  **🔍 Retrieval (The Brain):**
-    * The agent uses **Sentence Transformers** to convert the error log into a vector embedding.
-    * It queries **ChromaDB** (Vector Database) to find the most relevant source code file responsible for the crash.
-3.  **🤖 Reasoning:**
-    * The retrieved code + error context is sent to **Llama 3-70B** (via Groq).
-    * The LLM generates a syntax-valid Python patch.
-4.  **🧪 Verification:**
-    * The agent applies the fix and re-runs the tests in a sandboxed environment.
-    * If tests pass, it pushes a commit to the `main` branch.
+## Architecture
 
-## ⚡ Key Features
-* **Context-Aware Debugging:** Uses Vector Search to find bugs across the codebase, not just in hardcoded files.
-* **Zero-Touch Automation:** Fixes `IndexError`, `TypeError`, and logic bugs without human intervention.
-* **Self-Cleaning Infrastructure:** Automatically builds and wipes the vector memory (`chroma_db`) on every run to ensure fresh context.
-* **Defensive Coding:** The AI implements `try-except` blocks and type checks to prevent future crashes.
-
-## 🛠️ Tech Stack
-* **Core:** Python 3.12, Pytest, GitPython
-* **AI & LLM:** Llama 3 (Groq API), LangChain concepts
-* **RAG & Memory:** ChromaDB, Sentence-Transformers (`all-MiniLM-L6-v2`)
-* **DevOps:** GitHub Actions, Docker (via Runner)
-
-## 📦 Setup & Usage
-
-### 1. Fork & Clone
-```bash
-git clone [https://github.com/YOUR_USERNAME/auto-fix-agent.git](https://github.com/YOUR_USERNAME/auto-fix-agent.git)
-cd auto-fix-agent
-
-```
-
-### 2. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-
-```
-
-### 3. Set Up API Key
-
-You need a [Groq API Key](https://console.groq.com/).
-
-* **Locally:** Set `GROQ_API_KEY` in your environment variables.
-* **GitHub:** Add `GROQ_API_KEY` to Repository Secrets.
-
-### 4. Run Manually (Local Mode)
-
-To test the agent on your local machine:
-
-```bash
-# 1. Build the memory
-python indexer.py
-
-# 2. Run the agent (requires a broken test)
-python agent.py
-
-```
-
-## 📸 Proof of Concept
-
-*The agent automatically detecting a `TypeError`, searching ChromaDB for the culprit file, and pushing a defensive fix:*
-
-> **Commit Message:** `🤖 AI Auto-Fix: Resolved Unit Test Failures`
-
----
-
-*Built by Mallikarjun using GenAI and Grit.*
+```text
+GitHub Actions
+    ↓
+Run pytest
+    ↓
+Capture error log
+    ↓
+Query ChromaDB
+    ↓
+Retrieve relevant source file
+    ↓
+Send code + error to LLM
+    ↓
+Generate fixed code
+    ↓
+Overwrite file
+    ↓
+Run tests again
+    ↓
+Commit fix if successful
